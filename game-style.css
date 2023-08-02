@@ -1,0 +1,22 @@
+body{
+    background-color:azure;
+}
+#field table{
+    background-color:green;
+}
+td{
+    background-color:rgb(69, 188, 69);
+    color:rgb(69, 188, 69);
+    text-align: center;
+    height:50px;
+    width:50px;
+    border: 1px;
+}
+body{
+    display:flex;
+    justify-content: center;
+}
+#result{
+    font-size: xx-large;
+    color:crimson;
+}

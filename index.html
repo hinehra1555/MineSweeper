@@ -1,0 +1,250 @@
+<!-- @format -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="game-style.css" />
+    <title>MineSweeper|Himanshi Nehra</title>
+  </head>
+  <body oncontextmenu="myEventListener(event)" onclick="digTheField(event);" id="main">
+    <div id="box">
+      <div>
+        <div id="result"></div>
+        <div id="flags"></div>
+        <div id="time"></div>
+      </div>
+      <div id="field"></div>
+
+      <button onclick="location.reload();">New Game</button>
+    </div>
+    <script>
+      const totalRow = 10;
+      const totalColumn = 10;
+      const totalBomb = 10;
+      const totalFlag = 10;
+      let flagLeft = 10;
+      let bombLoc = [];
+      let visited = [];
+      let zeroElements = [];
+
+      function visite() {
+        for (let i = 0; i < 10; i++) {
+          let data = [];
+          for (let j = 0; j < 10; j++) {
+            data.push(false);
+          }
+          visited.push(data);
+        }
+      }
+      visite();
+      document.getElementById("flags").innerHTML = "🚩:" + flagLeft;
+      document.getElementById("time").innerHTML = "	&#x23F0;:";
+
+      function minePresent(row, col) {
+        return bombLoc.find(value => {
+          return value[0] == Number(row) && value[1] == Number(col);
+        });
+      }
+
+      function placeOneBomb() {
+        let row = Math.floor(Math.random() * 10);
+        let column = Math.floor(Math.random() * 10);
+        let isPresent;
+        if (bombLoc.length == 0) {
+          isPresent = -1;
+        } else {
+          isPresent = minePresent(row, column);
+          //console.log(isPresent);
+        }
+
+        if (isPresent == undefined || isPresent == -1) {
+          bombLoc.push([row, column]);
+        } else {
+          placeOneBomb();
+        }
+      }
+
+      function placeBomb() {
+        let bombCount = 0;
+        while (bombCount < 10) {
+          placeOneBomb();
+          bombCount++;
+        }
+      }
+
+      function createField() {
+        let i, j;
+        let field = document.getElementById("field");
+        let tbl = document.createElement("table");
+        for (i = 0; i < totalRow; i++) {
+          let trow = document.createElement("tr");
+
+          for (j = 0; j < totalColumn; j++) {
+            let tdata = document.createElement("td");
+            // let tvalue=document.createElement("p");
+            let getID = "box-" + i + "-" + j;
+            tdata.setAttribute("id", getID);
+            let checkBomb = minePresent(i, j);
+            if (checkBomb != undefined) {
+              // tdata.innerHTML="&#128163;";
+            } else {
+              tdata.innerHTML = assignNumber(i, j);
+            }
+            //tdata.appendChild(tvalue);
+            trow.appendChild(tdata);
+          }
+          tbl.appendChild(trow);
+        }
+        field.appendChild(tbl);
+      }
+
+      function assignNumber(i, j) {
+        let starti = i - 1 < 0 ? i : i - 1;
+        let startj = j - 1 < 0 ? j : j - 1;
+        let copy = startj;
+        let endi = i + 1 > 9 ? i : i + 1;
+        let endj = j + 1 > 9 ? j : j + 1;
+
+        let count = 0;
+        for (; starti <= endi; starti++) {
+          for (startj = copy; startj <= endj; startj++) {
+            if (minePresent(starti, startj) != undefined) {
+              count++;
+            }
+          }
+        }
+        return count;
+      }
+
+      placeBomb();
+      createField();
+
+      function myEventListener(event) {
+        event.preventDefault();
+
+        let targetId = event.target.id;
+        let row = targetId[4];
+        let col = targetId[6];
+
+        if (event.target.innerHTML != "🚩") {
+          event.target.innerHTML = "🚩";
+          flagLeft--;
+        } else {
+          let boxNumber = assignNumber(row, col);
+          document.getElementById(targetId).innerHTML = boxNumber;
+          flagLeft++;
+        }
+
+        document.getElementById("flags").innerHTML = "🚩:" + flagLeft;
+      }
+
+      function checkWin() {
+        for (let i = 0; i < 10; i++) {
+          for (let j = 0; j < 10; j++) {
+            let checkBomb = minePresent(i, j);
+            if (checkBomb == undefined && visited[i][j] == false) {
+              return false;
+            }
+          }
+        }
+        return true;
+      }
+
+      function digTheField(event) {
+        let targetId = event.target.id;
+        let row = targetId[4];
+        let col = targetId[6];
+        let checkMine = minePresent(row, col);
+        if (event.target.innerHTML == "🚩") {
+          return;
+        }
+
+        document.getElementById(targetId).style.backgroundColor = "grey";
+        document.getElementById(targetId).style.color = "white";
+
+        if (checkMine != undefined) {
+          document.getElementById("result").innerHTML = "GAME OVER";
+          document.getElementById(targetId).innerHTML = "&#128163;";
+          //document.getElementById("main").removeEventListener("click", digTheField);
+          //document.getElementById("main").removeEventListener("contextmenu", myEventListener);
+          clearInterval(startTimer);
+          return;
+        }
+
+        let elementValue = event.target.innerHTML;
+        if (visited[row][col] == false) {
+          if (Number(elementValue) == 0) {
+            removeAllAdjacentZero(row, col);
+            adjacentZero();
+          }
+        }
+        visited[row][col] = true;
+        let win = checkWin();
+        if (win == true) {
+          document.getElementById("result").innerHTML = "YOU WIN";
+          clearInterval(startTimer);
+        }
+      }
+
+      function adjacentZero() {
+        while (zeroElements.length > 0) {
+          let element = zeroElements.pop();
+          //console.log(typeof element[0], element[1]);
+          removeAllAdjacentZero(element[0], element[1]);
+        }
+        return;
+      }
+
+      function dig(i, j) {
+        let targetId = "box-" + i + "-" + j;
+        document.getElementById(targetId).style.backgroundColor = "grey";
+        document.getElementById(targetId).style.color = "white";
+        let value = document.getElementById(targetId).innerHTML;
+
+        if (visited[i][j] == false) {
+          if (Number(value) == 0) {
+            zeroElements.push([i, j]);
+          }
+        }
+        visited[i][j] = true;
+        let win = checkWin();
+        if (win == true) {
+          document.getElementById("result").innerHTML = "YOU WIN";
+          clearInterval(startTimer);
+        }
+        return;
+      }
+
+      function removeAllAdjacentZero(i, j) {
+        const row = Number(i);
+        const col = Number(j);
+        let starti = row - 1 < 0 ? row : row - 1;
+        let startj = col - 1 < 0 ? col : col - 1;
+        let copy = startj;
+        let endi = row + 1 > 9 ? row : row + 1;
+        let endj = col + 1 > 9 ? col : col + 1;
+
+        for (; starti <= endi; starti++) {
+          for (startj = copy; startj <= endj; startj++) {
+            dig(starti, startj);
+          }
+        }
+
+        return;
+      }
+
+      var seconds = 0;
+
+      function incrementSeconds() {
+        var el = document.getElementById("time");
+
+        seconds += 1;
+        el.innerHTML = "&#x23F0;:" + seconds;
+      }
+
+      var startTimer = setInterval(incrementSeconds, 1000);
+    </script>
+  </body>
+</html>
